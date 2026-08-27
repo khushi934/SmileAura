@@ -94,8 +94,8 @@ const forgotPassword = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // Create reset url
-    // using localhost for development, can be configured through env variable in production
-    const resetUrl = `http://localhost:5173/resetpassword/${resetToken}`;
+    const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendURL}/resetpassword/${resetToken}`;
 
     const htmlMessage = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
