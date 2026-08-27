@@ -6,6 +6,8 @@ import Doctors from './pages/Doctors';
 import Dashboard from './pages/Dashboard';
 import Booking from './pages/Booking';
 import AIAssistant from './pages/AIAssistant';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/ai-assistant" element={<AIAssistant />} />
+            <Route path="/forgotpassword" element={<ForgotPassword />} />
+            <Route path="/resetpassword/:resetToken" element={<ResetPassword />} />
           </Routes>
         </main>
       </div>
