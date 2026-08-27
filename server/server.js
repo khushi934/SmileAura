@@ -23,6 +23,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/ai', require('./routes/aiRoutes'));
 
 // Basic Route
 app.get('/', (req, res) => {
