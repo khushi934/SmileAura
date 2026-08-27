@@ -1,28 +1,49 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, Building2, Phone, X, CheckCircle2 } from 'lucide-react';
+import { MapPin, Clock, Building2, Phone, X, CheckCircle2, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const [clinics, setClinics] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedClinic, setSelectedClinic] = useState(null);
   const navigate = useNavigate();
 
+  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+
   useEffect(() => {
-    const fetchClinics = async () => {
+    if (!userInfo) {
+      navigate('/auth');
+      return;
+    }
+
+    const fetchData = async () => {
       try {
-        const response = await axios.get('/api/data/clinics');
-        setClinics(response.data);
+        const [clinicsRes, appointmentsRes] = await Promise.all([
+          axios.get('/api/data/clinics'),
+          axios.get(`/api/appointments?patientId=${userInfo._id}`)
+        ]);
+        
+        setClinics(clinicsRes.data);
+        
+        // If user is a Doctor, we might fetch all and filter by doctor user id, or just fetch all
+        if (userInfo.role === 'Doctor') {
+           const allAppsRes = await axios.get('/api/appointments');
+           // Filter where doctor's user name matches, or just show all for demo
+           setAppointments(allAppsRes.data.filter(app => app.doctor?.user?.name === userInfo.name || app.doctor?.user === userInfo._id));
+        } else {
+           setAppointments(appointmentsRes.data);
+        }
       } catch (error) {
-        console.error('Failed to fetch clinics', error);
+        console.error('Failed to fetch dashboard data', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchClinics();
-  }, []);
+    fetchData();
+  }, [navigate, userInfo]);
 
   if (loading) {
     return (
@@ -35,75 +56,126 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-10 border-b border-gray-200 pb-6">
-          <div>
-            <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Clinic Directory</h1>
-            <p className="text-xl text-gray-600">Discover our premium facilities across Lucknow.</p>
-          </div>
+        <div className="mb-12">
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Welcome, {userInfo?.name}</h1>
+          <p className="text-xl text-gray-600">Manage your appointments and explore our clinics.</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {clinics.map((clinic, index) => (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 }}
-              key={clinic._id} 
-              className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all border border-gray-100 flex flex-col sm:flex-row"
-            >
-              <div className="sm:w-2/5 h-48 sm:h-auto relative overflow-hidden">
-                <img 
-                  src={clinic.image || "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=800"} 
-                  alt={clinic.name} 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              
-              <div className="p-6 sm:w-3/5 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-primary" /> {clinic.name}
-                  </h3>
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-start text-gray-600 text-sm">
-                      <MapPin className="w-4 h-4 mr-2 shrink-0 mt-0.5 text-gray-400" />
-                      <span>{clinic.location}</span>
-                    </div>
-                    <div className="flex items-start text-gray-600 text-sm">
-                      <Clock className="w-4 h-4 mr-2 shrink-0 mt-0.5 text-gray-400" />
-                      <span>{clinic.operatingHours}</span>
-                    </div>
-                    <div className="flex items-start text-gray-600 text-sm">
-                      <Phone className="w-4 h-4 mr-2 shrink-0 mt-0.5 text-gray-400" />
-                      <span>+91 98765 43210</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {clinic.services.map((service, i) => (
-                      <span key={i} className="bg-teal-50 text-teal-700 text-xs font-semibold px-2 py-1 rounded">
-                        {service}
-                      </span>
-                    ))}
-                  </div>
+        {/* Appointments Section */}
+        <div className="mb-16">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2 border-b pb-4">
+             <Calendar className="w-6 h-6 text-primary" /> 
+             {userInfo?.role === 'Doctor' ? 'Your Schedule' : 'Your Appointments'}
+          </h2>
+          {appointments.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-100">
+               <p className="text-gray-500 mb-4">You have no upcoming appointments.</p>
+               {userInfo?.role !== 'Doctor' && (
+                 <button onClick={() => navigate('/booking')} className="bg-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-secondary transition">
+                   Book Now
+                 </button>
+               )}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {appointments.map((app) => (
+                <div key={app._id} className="bg-white rounded-2xl p-6 shadow-md border-l-4 border-primary flex flex-col gap-3 relative overflow-hidden group">
+                   <div className="absolute top-0 right-0 bg-teal-50 px-3 py-1 rounded-bl-xl text-xs font-bold text-primary">
+                      Confirmed
+                   </div>
+                   <h3 className="font-bold text-lg text-gray-900">
+                     {userInfo?.role === 'Doctor' ? `Patient: ${app.patient?.name}` : `Dr. ${app.doctor?.user?.name || 'Assigned Specialist'}`}
+                   </h3>
+                   <div className="text-sm text-gray-600 flex flex-col gap-1.5">
+                     <div className="flex justify-between border-b pb-1">
+                        <span className="font-semibold text-gray-500">Date</span>
+                        <span className="text-gray-900">{app.date}</span>
+                     </div>
+                     <div className="flex justify-between border-b pb-1">
+                        <span className="font-semibold text-gray-500">Time</span>
+                        <span className="text-gray-900">{app.time}</span>
+                     </div>
+                     <div className="flex justify-between border-b pb-1">
+                        <span className="font-semibold text-gray-500">Clinic</span>
+                        <span className="text-gray-900 truncate max-w-[120px]">{app.clinic?.name}</span>
+                     </div>
+                   </div>
+                   {app.problemDescription && (
+                     <div className="mt-2 text-sm bg-gray-50 p-3 rounded-lg text-gray-600 italic">
+                        "{app.problemDescription}"
+                     </div>
+                   )}
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-                <button 
-                  onClick={() => setSelectedClinic(clinic)}
-                  className="w-full text-center bg-gray-50 hover:bg-gray-100 text-primary font-bold py-2 rounded-lg transition-colors border border-gray-200"
-                >
-                  View Details
-                </button>
-              </div>
-            </motion.div>
-          ))}
+        {/* Clinics Section */}
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2 border-b pb-4">
+             <Building2 className="w-6 h-6 text-primary" /> Clinic Directory
+          </h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            {clinics.map((clinic, index) => (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.1 }}
+                key={clinic._id} 
+                className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all border border-gray-100 flex flex-col sm:flex-row"
+              >
+                <div className="sm:w-2/5 h-48 sm:h-auto relative overflow-hidden">
+                  <img 
+                    src={clinic.image || "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=800"} 
+                    alt={clinic.name} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                
+                <div className="p-6 sm:w-3/5 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-primary" /> {clinic.name}
+                    </h3>
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-start text-gray-600 text-sm">
+                        <MapPin className="w-4 h-4 mr-2 shrink-0 mt-0.5 text-gray-400" />
+                        <span>{clinic.location}</span>
+                      </div>
+                      <div className="flex items-start text-gray-600 text-sm">
+                        <Clock className="w-4 h-4 mr-2 shrink-0 mt-0.5 text-gray-400" />
+                        <span>{clinic.operatingHours}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {clinic.services.map((service, i) => (
+                        <span key={i} className="bg-teal-50 text-teal-700 text-xs font-semibold px-2 py-1 rounded">
+                          {service}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => setSelectedClinic(clinic)}
+                    className="w-full text-center bg-gray-50 hover:bg-gray-100 text-primary font-bold py-2 rounded-lg transition-colors border border-gray-200"
+                  >
+                    View Details
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
 
+      {/* Modal matching original design kept intact */}
       <AnimatePresence>
         {selectedClinic && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

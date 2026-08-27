@@ -1,10 +1,18 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Stethoscope, CalendarDays, LayoutDashboard, Sparkles, User, Menu } from 'lucide-react';
 import { useState } from 'react';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  
+  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+
+  const handleLogout = () => {
+    localStorage.removeItem('userInfo');
+    navigate('/auth');
+  };
 
   const isActive = (path) => location.pathname === path;
 
@@ -46,12 +54,27 @@ const Navbar = () => {
             ))}
             
             <div className="ml-4 pl-4 border-l border-gray-300 flex items-center space-x-3">
-              <Link 
-                to="/auth" 
-                className="text-gray-700 hover:text-primary px-4 py-2 rounded-full text-sm font-bold transition-colors"
-              >
-                Login
-              </Link>
+              {userInfo ? (
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center gap-2 bg-teal-50 px-4 py-2 rounded-full border border-teal-100">
+                    <User className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-bold text-teal-800">{userInfo.name}</span>
+                  </div>
+                  <button 
+                    onClick={handleLogout}
+                    className="text-gray-700 hover:text-red-600 px-3 py-2 rounded-full text-sm font-bold transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <Link 
+                  to="/auth" 
+                  className="text-gray-700 hover:text-primary px-4 py-2 rounded-full text-sm font-bold transition-colors"
+                >
+                  Login
+                </Link>
+              )}
               <Link 
                 to="/booking" 
                 className="group flex items-center bg-gradient-to-r from-primary to-secondary text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-lg shadow-teal-500/30 hover:shadow-teal-500/50 hover:-translate-y-0.5 transition-all duration-300"
@@ -90,8 +113,17 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="border-t border-gray-200 pt-2 mt-2 flex flex-col gap-2">
-              <Link to="/auth" className="text-center text-gray-700 hover:text-primary py-3 font-bold">Login</Link>
-              <Link to="/booking" className="text-center bg-primary text-white py-3 rounded-lg font-bold shadow-md">Book Appointment</Link>
+              {userInfo ? (
+                <>
+                  <div className="flex items-center justify-center gap-2 bg-teal-50 text-teal-800 py-2 rounded-lg font-bold">
+                    <User className="w-4 h-4" /> {userInfo.name}
+                  </div>
+                  <button onClick={handleLogout} className="text-center text-red-600 hover:text-red-700 py-2 font-bold">Logout</button>
+                </>
+              ) : (
+                <Link to="/auth" className="text-center text-gray-700 hover:text-primary py-2 font-bold">Login</Link>
+              )}
+              <Link to="/booking" className="text-center bg-primary hover:bg-secondary text-white py-3 rounded-lg font-bold shadow-md transition-colors mt-1">Book Appointment</Link>
             </div>
           </div>
         </div>

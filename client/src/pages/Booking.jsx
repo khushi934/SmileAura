@@ -220,24 +220,31 @@ const Booking = () => {
                 ></textarea>
               </div>
 
-              {!userInfo && (
-                <div className="bg-blue-50 border border-blue-100 text-blue-700 p-4 rounded-xl text-sm flex items-center gap-3">
-                  <UserIcon className="w-5 h-5 shrink-0" />
-                  <p>You are booking as a guest. <a href="/auth" className="font-bold underline">Log in</a> to manage your appointments easily.</p>
+              {!userInfo ? (
+                <div className="bg-red-50 border border-red-100 text-red-700 p-4 rounded-xl text-sm flex flex-col items-center gap-3 text-center">
+                  <UserIcon className="w-8 h-8 shrink-0 text-red-400" />
+                  <p className="text-base">Authentication is required to book an appointment.</p>
+                  <button 
+                    type="button"
+                    onClick={() => navigate('/auth')}
+                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors mt-2"
+                  >
+                    Log In to Continue
+                  </button>
                 </div>
+              ) : (
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-teal-800 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-teal-500/30 transform transition-all hover:-translate-y-0.5 focus:outline-none disabled:opacity-70 flex justify-center items-center"
+                >
+                  {loading ? (
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    'Confirm Booking'
+                  )}
+                </button>
               )}
-
-              <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-teal-800 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-teal-500/30 transform transition-all hover:-translate-y-0.5 focus:outline-none disabled:opacity-70 flex justify-center items-center"
-              >
-                {loading ? (
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  'Confirm Booking'
-                )}
-              </button>
             </form>
           </div>
         </motion.div>

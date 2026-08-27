@@ -12,12 +12,15 @@ const createAppointment = async (req, res) => {
     if (!doctorId || !clinicId || !date || !time) {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
+    if (!patientId) {
+      return res.status(401).json({ message: 'Not authorized. Please login to book an appointment.' });
+    }
 
     // In a real app with JWT auth, patientId comes from req.user._id
     // For testing without strict auth, we accept it from body or fallback to null (if schema allows, but patient is required. We'll use a placeholder or handle it from frontend)
     
     const appointment = new Appointment({
-      patient: patientId || "60d0fe4f5311236168a109ca", // fallback for testing if no user is logged in
+      patient: patientId,
       doctor: doctorId,
       clinic: clinicId,
       date,
@@ -38,11 +41,25 @@ const createAppointment = async (req, res) => {
 // @access  Public
 const getAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.find({})
+    let filter = {};
+    if (req.query.patientId) {
+      filter.patient = req.query.patientId;
+    }
+    if (req.query.doctorId) {
+      filter.doctor = req.query.doctorId;
+    }
+    
+    // Sort by most recent appointments first
+    const appointments = await Appointment.find(filter)
+      .sort({ date: -1, time: -1 })
       .populate('patient', 'name email')
-      .populate('doctor', 'user specialty')
+      .populate('doctor')
       .populate('clinic', 'name location');
-    res.json(appointments);
+      
+    // Populate nested user in doctor
+    const populated = await Appointment.populate(appointments, { path: 'doctor.user', select: 'name email' });
+      
+    res.json(populated || appointments);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
